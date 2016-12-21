@@ -1,0 +1,8 @@
+#ignores the SoundMetrics directory
+/aris-file-sdk-master
+
+#ignore Nils Matlab files folder
+/ARISreader-master
+
+#ignore *.aris files
+*.aris
