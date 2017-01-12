@@ -12,7 +12,6 @@ This
 """
 
 #ToDo
-#Smooth data (i.e. add interpolated beams)
 #Reduce the gain
 #populate help function
 #Populate doc string
@@ -24,26 +23,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pylab import rcParams
 import pyARIS
-import beamLookUp
+import subprocess as sp
 
 #File name
 filename = 'C:/Coding_Projects/PyARIS/2013-12-06_132430.aris'
 #filename = 'D:/Programs/Google Drive/PyARIS/2013-12-06_132430.aris'
 
-
-
 #Open file header and extract metadata
 test = pyARIS.DataImport(filename)
-
-#List of attributes
-att = dir(test)
 
 #Retreive frame data with metadata
 test_frame = pyARIS.FrameRead(test, 1)
 
 #Remap ARIS Data
 pyARIS.createLUP(test, test_frame) #Speed up?
-pyARIS.remapARIS(test, test_frame, frameBuffer = 0.05)
+pyARIS.remapARIS(test, test_frame, frameBuffer = 0.025)
 
 
 #Plot
@@ -52,6 +46,11 @@ rcParams['figure.figsize'] = graphSize
 plt.imshow(test_frame.remap, origin = "lower", vmin = 0, vmax = 100)
 #plt.savefig('frame.png', bbox_inches = 'tight', pad_inches = 0.25)
 plt.show()
+
+
+#Video out
+command = ['ffmpeg.exe', '-i', 'test.mp4', '-f', 'image2pipe', '-pix_fmt', 'rgb24', '-vcodec', 'rawvideo', '-']
+
 
 #List of attributes
 att2 = dir(test_frame)

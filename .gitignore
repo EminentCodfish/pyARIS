@@ -9,3 +9,9 @@
 
 #ignore *.spyderworkspace config file
 *.spyderworkspace
+
+#ignore compile python files
+*.pyc
+
+#ignore ffmpeg
+ffmpeg.exe
