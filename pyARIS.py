@@ -610,9 +610,9 @@ def createLUP(ARISFile, frame):
                 if Bin < frame.samplesperbeam:
                     LUP[(x, y)] = (Bin, Beam)
                 
-    return LUP
+    ARISFile.LUP = LUP
 
-def remapARIS(ARISFile, frame):                
+def remapARIS(ARISFile, frame, frameBuffer = None):                
     #Create an empty frame
     Remap = np.zeros([ARISFile.xdim,ARISFile.ydim])
     
@@ -620,5 +620,14 @@ def remapARIS(ARISFile, frame):
     for key in ARISFile.LUP:
         Remap[key[0],key[1]] = frame.frame_data[ARISFile.LUP[key][0], ARISFile.LUP[key][1]]
         
+    Remap = np.rot90(Remap, 3)
+    
+    #Add buffer is requested
+    if frameBuffer != None:
+        buffY = int(ARISFile.ydim*frameBuffer)
+        buffX = int(ARISFile.xdim*frameBuffer)
+        Remap = np.concatenate((np.ones([ARISFile.ydim, buffX]), Remap, np.ones([ARISFile.ydim, buffX])), axis = 1)
+        Remap = np.concatenate((np.ones([buffY,ARISFile.xdim+buffX*2]), Remap, np.ones([buffY,ARISFile.xdim+buffX*2])))
+        
     #Add to frame data
-    return Remap
+    frame.remap = Remap

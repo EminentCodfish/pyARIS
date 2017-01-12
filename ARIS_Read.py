@@ -12,7 +12,6 @@ This
 """
 
 #ToDo
-#Rectify method with argument
 #Smooth data (i.e. add interpolated beams)
 #Reduce the gain
 #populate help function
@@ -41,8 +40,20 @@ att = dir(test)
 
 #Retreive frame data with metadata
 test_frame = pyARIS.FrameRead(test, 1)
-frame = test_frame.frame_data
 
+#Remap ARIS Data
+pyARIS.createLUP(test, test_frame) #Speed up?
+pyARIS.remapARIS(test, test_frame, frameBuffer = 0.05)
+
+
+#Plot
+graphSize = (12, 8)
+rcParams['figure.figsize'] = graphSize
+plt.imshow(test_frame.remap, origin = "lower", vmin = 0, vmax = 100)
+#plt.savefig('frame.png', bbox_inches = 'tight', pad_inches = 0.25)
+plt.show()
+
+#List of attributes
 att2 = dir(test_frame)
 
 #Expand x axis      
@@ -55,16 +66,3 @@ for x in range(0,test_frame.BeamCount*x_factor,x_factor):
 #Plot
 plt.imshow(frame, origin = "lower", vmin = 0, vmax = 80)
 plt.show()
-
-
-'''Remap ARIS Data'''
-test.LUP = pyARIS.createLUP(test, test_frame) #Speed up?
-test_frame.remap = pyARIS.remapARIS(test, test_frame)
-
-#Plot
-plt.imshow(np.rot90(test_frame.remap, 3), origin = "lower", vmin = 0, vmax = 100)
-#graphSize = (12, 8)
-#rcParams['figure.figsize'] = graphSize
-#plt.savefig('frame.png', bbox_inches = 'tight', pad_inches = 0.25)
-plt.show()
-
