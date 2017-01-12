@@ -10,6 +10,9 @@ Last modified on: December 20, 2016
 """
 import struct, array, pytz, datetime
 import numpy as np
+import beamLookUp
+
+print __doc__
 
 class ARIS_File:
     'This is a class container for the ARIS file headers'
@@ -557,3 +560,65 @@ def FrameRead(ARIS_data, frameIndex):
     data.close()
     
     return output
+    
+'''Data remapping functions'''
+
+
+#WinLen = test_frame.sampleperiod * test_frame.samplesperbeam * 0.000001 * test_frame.soundspeed / 2
+#RangeStart = WinStart
+#RangeEnd = WinStart + WinLen
+#SampleLength = test_frame.sampleperiod * 0.000001 * test_frame.soundspeed / 2
+
+def getXY(beamnum, binnum, frame):
+    WinStart = frame.samplestartdelay * 0.000001 * frame.soundspeed / 2
+    bin_dist = WinStart + frame.sampleperiod * binnum * 0.000001 * frame.soundspeed / 2
+    beam_angle = beamLookUp.beamAngle(beamnum)
+    x = bin_dist*np.sin(np.deg2rad(-beam_angle))
+    y = bin_dist*np.cos(np.deg2rad(-beam_angle))
+    return x, y
+
+def getBeamBin(x,y, frame):
+    WinStart = frame.samplestartdelay * 0.000001 * frame.soundspeed / 2
+    angle = np.rad2deg(np.tan(x/y))
+    hyp = y/np.cos(np.deg2rad(angle))
+    binnum2 = int((2*(hyp-WinStart))/(frame.sampleperiod * 0.000001 * frame.soundspeed))
+    beamnum = beamLookUp.BeamLookUp(-angle)
+    return beamnum, binnum2
+    
+def px2Meters(x,y, frame):
+    WinStart = frame.samplestartdelay * 0.000001 * frame.soundspeed / 2
+    pix2Meter = frame.sampleperiod * 0.000001 * frame.soundspeed / 2
+    xdim = int(getXY(0,frame.samplesperbeam, frame)[0]*(1/pix2Meter)*2)
+    x1 = (x - xdim/2) * pix2Meter #Convert X pixel to X dimension
+    y1 = (y*pix2Meter)+(WinStart) #Convert Y pixel to y dimension
+    return x1, y1    
+
+def createLUP(ARISFile, frame):
+    #Lookup dimensions
+    SampleLength = frame.sampleperiod * 0.000001 * frame.soundspeed / 2
+    ARISFile.ydim = int(frame.samplesperbeam)
+    ARISFile.xdim = int(getXY(0,frame.samplesperbeam, frame)[0]*(1/SampleLength)*2)
+
+    LUP = {}
+
+    #Iterate through each point in the frame and lookup data
+    for x in range(ARISFile.xdim):
+        for y in range(ARISFile.ydim):
+            x1, y1 = px2Meters(x, y, frame)
+            Beam, Bin = getBeamBin(x1, y1, frame)
+            if Beam != 999:
+                if Bin < frame.samplesperbeam:
+                    LUP[(x, y)] = (Bin, Beam)
+                
+    return LUP
+
+def remapARIS(ARISFile, frame):                
+    #Create an empty frame
+    Remap = np.zeros([ARISFile.xdim,ARISFile.ydim])
+    
+    #Populate the empty frame
+    for key in ARISFile.LUP:
+        Remap[key[0],key[1]] = frame.frame_data[ARISFile.LUP[key][0], ARISFile.LUP[key][1]]
+        
+    #Add to frame data
+    return Remap

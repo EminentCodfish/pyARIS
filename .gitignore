@@ -6,3 +6,6 @@
 
 #ignore *.aris files
 *.aris
+
+#ignore *.spyderworkspace config file
+*.spyderworkspace
