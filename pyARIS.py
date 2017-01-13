@@ -288,7 +288,7 @@ class ARIS_Frame(ARIS_File):
         print('Frequency: ' + str(self.frequencyhilow))
                     
 
-def DataImport(filename):
+def DataImport(filename, startFrame = 1, frameBuffer = 0):
     data = open(filename, 'rb')
 
     #Start reading file header
@@ -343,11 +343,17 @@ def DataImport(filename):
     
     #Close data file
     data.close()
+    
+    #Create an empty container for the lookup table
+    output_data.LUP = None
+    
+    #Load the first frame
+    frame = FrameRead(output_data, startFrame)
                  
     #Return the data structure
-    return output_data
+    return output_data, frame
     
-def FrameRead(ARIS_data, frameIndex):
+def FrameRead(ARIS_data, frameIndex, frameBuffer = None):
 
     FrameSize = ARIS_data.NumRawBeams*ARIS_data.SamplesPerChannel
         
@@ -538,6 +544,7 @@ def FrameRead(ARIS_data, frameIndex):
                  tiltmotorerrorcode, rollmotorerrorcode, panabsposition, tiltabsposition, rollabsposition, panaccelx, panaccely, panaccelz, tiltaccelx, 
                  tiltaccely, tiltaccelz, rollaccelx, rollaccely, rollaccelz, appliedsettings, constrainedsettings, invalidsettings, enableinterpacketdelay,
                  interpacketdelayperiod, uptime, arisappversionmajor, arisappversionminor, gotime, panvelocity, tiltvelocity, rollvelocity, sentinel)
+        
     
     #Add the frame data
     if pingmode == 9:
@@ -556,8 +563,17 @@ def FrameRead(ARIS_data, frameIndex):
     frame = vfunc(frame)
     
     output.frame_data = frame
+    output.WinStart = output.samplestartdelay * 0.000001 * output.soundspeed / 2
     
-    data.close()
+    #Close the data file
+    data.close()    
+    
+    #Create the lookup table
+    if ARIS_data.LUP == None:
+        createLUP(ARIS_data, output)
+    
+    #Remap the first frame
+    remapARIS(ARIS_data, output, frameBuffer)
     
     return output
     
@@ -570,27 +586,28 @@ def FrameRead(ARIS_data, frameIndex):
 #SampleLength = test_frame.sampleperiod * 0.000001 * test_frame.soundspeed / 2
 
 def getXY(beamnum, binnum, frame):
-    WinStart = frame.samplestartdelay * 0.000001 * frame.soundspeed / 2
-    bin_dist = WinStart + frame.sampleperiod * binnum * 0.000001 * frame.soundspeed / 2
+    #WinStart = frame.samplestartdelay * 0.000001 * frame.soundspeed / 2
+    bin_dist = frame.WinStart + frame.sampleperiod * binnum * 0.000001 * frame.soundspeed / 2
     beam_angle = beamLookUp.beamAngle(beamnum)
     x = bin_dist*np.sin(np.deg2rad(-beam_angle))
     y = bin_dist*np.cos(np.deg2rad(-beam_angle))
     return x, y
 
 def getBeamBin(x,y, frame):
-    WinStart = frame.samplestartdelay * 0.000001 * frame.soundspeed / 2
+    #WinStart = frame.samplestartdelay * 0.000001 * frame.soundspeed / 2
     angle = np.rad2deg(np.tan(x/y))
     hyp = y/np.cos(np.deg2rad(angle))
-    binnum2 = int((2*(hyp-WinStart))/(frame.sampleperiod * 0.000001 * frame.soundspeed))
+    binnum2 = int((2*(hyp-frame.WinStart))/(frame.sampleperiod * 0.000001 * frame.soundspeed))
     beamnum = beamLookUp.BeamLookUp(-angle)
     return beamnum, binnum2
     
-def px2Meters(x,y, frame):
-    WinStart = frame.samplestartdelay * 0.000001 * frame.soundspeed / 2
+def px2Meters(x,y, frame, xdim = None):
+    #WinStart = frame.samplestartdelay * 0.000001 * frame.soundspeed / 2
     pix2Meter = frame.sampleperiod * 0.000001 * frame.soundspeed / 2
-    xdim = int(getXY(0,frame.samplesperbeam, frame)[0]*(1/pix2Meter)*2)
+    if xdim == None:
+        xdim = int(getXY(0,frame.samplesperbeam, frame)[0]*(1/pix2Meter)*2)
     x1 = (x - xdim/2) * pix2Meter #Convert X pixel to X dimension
-    y1 = (y*pix2Meter)+(WinStart) #Convert Y pixel to y dimension
+    y1 = (y*pix2Meter)+(frame.WinStart) #Convert Y pixel to y dimension
     return x1, y1    
 
 def createLUP(ARISFile, frame):
@@ -604,7 +621,7 @@ def createLUP(ARISFile, frame):
     #Iterate through each point in the frame and lookup data
     for x in range(ARISFile.xdim):
         for y in range(ARISFile.ydim):
-            x1, y1 = px2Meters(x, y, frame)
+            x1, y1 = px2Meters(x, y, frame, xdim = ARISFile.xdim)
             Beam, Bin = getBeamBin(x1, y1, frame)
             if Beam != 999:
                 if Bin < frame.samplesperbeam:
