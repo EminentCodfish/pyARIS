@@ -15,3 +15,6 @@
 
 #ignore ffmpeg
 ffmpeg.exe
+
+#ignore any mp4 files
+*.mp4

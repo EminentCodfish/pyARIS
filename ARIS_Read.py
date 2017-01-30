@@ -13,17 +13,23 @@ This
 
 #ToDo
 #Export to video
-#Tranfer to OpenCV
 #Reduce the gain
 #populate help function
 #Populate doc string
+#Add some error trapping
 #How do we get range and positional measurements? 
+#Speed up translation
+#Smooth images
+#Add timestamp to video output?
 
-import numpy as np
-import matplotlib.pyplot as plt
-from pylab import rcParams
+#import numpy as np
+#import matplotlib.pyplot as plt
+#from pylab import rcParams
 import pyARIS
 import subprocess as sp
+from PIL import Image
+import cv2
+import tqdm
 
 #File name
 filename = 'C:/Coding_Projects/PyARIS/2013-12-06_132430.aris'
@@ -33,27 +39,24 @@ filename = 'C:/Coding_Projects/PyARIS/2013-12-06_132430.aris'
 data, frame = pyARIS.DataImport(filename)
 
 #Retreive frame data with metadata
-frame = pyARIS.FrameRead(data, 500)
+frame = pyARIS.FrameRead(data, 1)
 
+#Output image vis PIL
+#im = Image.fromarray(frame.remap)
+#im.show()
+
+#Show via openCV
+cv2.imshow('data',frame.remap)
+cv2.waitKey(5000)
+cv2.destroyAllWindows()
 
 #Plot
-graphSize = (12, 8)
-rcParams['figure.figsize'] = graphSize
-plt.imshow(frame.remap, origin = "lower", vmin = 0, vmax = 100)
+#graphSize = (12, 8)
+#rcParams['figure.figsize'] = graphSize
+#plt.imshow(frame.remap, origin = "lower", vmin = 0, vmax = 255)
 #plt.savefig('frame.png', bbox_inches = 'tight', pad_inches = 0.25)
-plt.show()
+#plt.show()
 
 
-#Video out
-command = ['ffmpeg.exe', '-i', 'test.mp4', '-f', 'image2pipe', '-pix_fmt', 'rgb24', '-vcodec', 'rawvideo', '-']
-pipe = sp.Popen(command, stdout = sp.PIPE, bufsize=10**8)
-
-
-
-#List of attributes
-att2 = dir(test_frame)
-
-
-#Plot
-plt.imshow(frame, origin = "lower", vmin = 0, vmax = 80)
-plt.show()
+#Video out	
+pyARIS.VideoExport(data, 'test_video1.mp4')

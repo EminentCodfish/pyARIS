@@ -8,7 +8,9 @@ Last modified on: December 20, 2016
 
 @author: Rillahan
 """
-import struct, array, pytz, datetime
+import struct, array, pytz, datetime, tqdm
+import subprocess as sp
+from PIL import Image
 import numpy as np
 import beamLookUp
 
@@ -558,9 +560,9 @@ def FrameRead(ARIS_data, frameIndex, frameBuffer = None):
     frame = np.fliplr(frame)
     
     #Remap the data from 0-255 to 0-80 dB
-    remap = lambda t: (t * 80)/255
-    vfunc = np.vectorize(remap)
-    frame = vfunc(frame)
+    #remap = lambda t: (t * 80)/255
+    #vfunc = np.vectorize(remap)
+    #frame = vfunc(frame)
     
     output.frame_data = frame
     output.WinStart = output.samplestartdelay * 0.000001 * output.soundspeed / 2
@@ -647,4 +649,32 @@ def remapARIS(ARISFile, frame, frameBuffer = None):
         Remap = np.concatenate((np.ones([buffY,ARISFile.xdim+buffX*2]), Remap, np.ones([buffY,ARISFile.xdim+buffX*2])))
         
     #Add to frame data
-    frame.remap = Remap
+    frame.remap = Remap.astype('uint8')
+    
+def VideoExport(data, filename, fps = 24.0, start_frame = 1, end_frame = None):
+    #Command to send via the command prompt which specifies the pipe parameters
+    command = ['ffmpeg.exe',
+           '-y', # (optional) overwrite output file if it exists
+           '-f', 'image2pipe',
+           '-vcodec','png',
+           '-r', '1',
+#           '-s', '793x1327', # size of one frame
+           '-r', str(fps), # frames per second
+           '-i', '-', # The input comes from a pipe
+           '-an', # Tells FFMPEG not to expect any audio
+           '-vcodec', 'mpeg4',
+           filename]
+
+    #Open the pipe
+    pipe = sp.Popen(command, stdin=sp.PIPE)
+
+    if end_frame == None:
+        end_frame = data.FrameCount
+ 
+    #Iterate through the dataframes and push to pipe       
+    for i in tqdm.tqdm(range(start_frame-1, end_frame)):
+        frame = FrameRead(data, i)
+        im = Image.fromarray(frame.remap)
+        im.save(pipe.stdin, 'PNG')
+
+    pipe.stdin.close()
