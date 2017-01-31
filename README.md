@@ -36,14 +36,16 @@ frameBuffer: Adds a specified number of pixels to be added to the remapped frame
 
 Once the data file has been opened, specific frames can be loaded.  
 
-::
+	~~~~
 	frame = pyARIS.FrameRead(ARISdata, 2)
+	~~~~
 
 This methods could be used with a loop to iterate through the frames in the file. 
 
-::
+	~~~~
 	for i in range(ARISdata.FrameCount):
         frame = FrameRead(ARISdata, i)
+    ~~~~
 
 Additional arguments: 
 frameBuffer: Adds a specified number of pixels to be added to the remapped frame.
@@ -53,24 +55,27 @@ frameBuffer: Adds a specified number of pixels to be added to the remapped frame
 At this point the data can be passed into different packages.  To view and save
 the remapped image with matplotlib:
 
-::
+	~~~~
 	import matplotlib.pyplot as plt
 	plt.imshow(frame.remap, origin = "lower", vmin = 0, vmax = 255)
 	plt.savefig('frame.png', bbox_inches = 'tight', pad_inches = 0.25)
 	plt.show()
+	~~~~
 
 To view using PIL
-::
+	~~~~
 	from PIL import Image
 	im = Image.fromarray(frame.remap)
 	im.show()
+	~~~~
 
 The data is OpenCV compatable.  To view:
-::
+	~~~~
 	import cv2
 	cv2.imshow('data',frame.remap)
 	cv2.waitKey(5000)
 	cv2.destroyAllWindows()
+	~~~~
 
 #### Exporting video
 The VideoExport() method utilizes FFMpeg to pipe the frame data into a MP4 container.
@@ -78,5 +83,6 @@ If FFMpeg is not in your filepath then I typically put the FFMpeg.exe file in th
 working directory.
 
 To implement:
-::
+	~~~~
 	pyARIS.VideoExport(data, 'test_video.mp4', start_frame = 10, end_frame = 50)
+	~~~~
