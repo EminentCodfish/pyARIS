@@ -18,3 +18,13 @@ ffmpeg.exe
 
 #ignore any mp4 files
 *.mp4
+
+#Ignore any image files
+*.png
+*.jpg
+
+#Ignore compiled files
+*.pyc
+
+#Ignore my test files
+ARIS_Read.py
