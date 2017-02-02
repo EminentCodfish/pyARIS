@@ -11,7 +11,7 @@ The most recent version can be found at: https://github.com/EminentCodfish/pyARI
 """
 import struct, array, pytz, datetime, tqdm
 import subprocess as sp
-from PIL import Image
+from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 import beamLookUp
 
@@ -701,7 +701,7 @@ def remapARIS(ARISFile, frame, frameBuffer = None):
     for key in ARISFile.LUP:
         Remap[key[0],key[1]] = frame.frame_data[ARISFile.LUP[key][0], ARISFile.LUP[key][1]]
         
-    Remap = np.rot90(Remap, 3)
+    Remap = np.rot90(Remap, 1)
     
     #Add buffer is requested
     if frameBuffer != None:
@@ -713,16 +713,19 @@ def remapARIS(ARISFile, frame, frameBuffer = None):
     #Add to frame data
     frame.remap = Remap.astype('uint8')
     
-def VideoExport(data, filename, fps = 24.0, start_frame = 1, end_frame = None):
+def VideoExport(data, filename, fps = 24.0, start_frame = 1, end_frame = None, timestamp = False, fontsize = 30, ts_pos = (0,0)):
     """Output video using the ffmpeg pipeline. The current implementation 
     outputs compresses png files and outputs a mp4.
     
     Parameters
     -----------
-    data : ARIS data structure returned via pyARIS.DataImport()
-    filename : output filename.  Must include file extension (i.e. 'video.mp4')
-    fps : Output video frame rate (frames per second). Default = 24 fps
-    start_frame, end_frame : Range of frames included in the output video  
+    data : (Str) ARIS data structure returned via pyARIS.DataImport()
+    filename : (Str) output filename.  Must include file extension (i.e. 'video.mp4')
+    fps : (Float) Output video frame rate (frames per second). Default = 24 fps
+    start_frame, end_frame : (Int) Range of frames included in the output video 
+    timestamp : (Bool) Add the timestamp from the sonar to the video frames
+    fontsize : (Int) Size of timestamp font 
+    ts_pos : (Tuple) (x,y) location of the timestamp
     
     Returns
     -------
@@ -763,6 +766,11 @@ def VideoExport(data, filename, fps = 24.0, start_frame = 1, end_frame = None):
     for i in tqdm.tqdm(range(start_frame-1, end_frame)):
         frame = FrameRead(data, i)
         im = Image.fromarray(frame.remap)
-        im.save(pipe.stdin, 'JPG')
+        if timestamp == True:
+            ts = str(datetime.datetime.fromtimestamp(frame.sonartimestamp/1000000, pytz.timezone('UTC')).strftime('%Y-%m-%d %H:%M:%S'))
+            draw = ImageDraw.Draw(im)
+            font = ImageFont.truetype("./arial.ttf", fontsize)
+            draw.text(ts_pos,ts,font=font, fill = 'white')
+        im.save(pipe.stdin, 'JPEG')
 
     pipe.stdin.close()

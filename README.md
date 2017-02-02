@@ -5,7 +5,7 @@ This package provides an interface between python and ARIS files.
 ###Additional sources of information:
 Soundmetrics GitHub Repo.: https://github.com/SoundMetrics
 
-Currently this packages has only been tested on with the ARIS Explorer 3000
+Currently this packages has only been tested with the ARIS Explorer 3000
 in 128 beam mode.  It should work with other versions, but they have yet to 
 be tested.  This package currently doesn't support the tele-photo len.
 
@@ -84,9 +84,10 @@ The data is OpenCV compatable.  To view:
 #### Exporting video
 The VideoExport() method utilizes FFMpeg to pipe the frame data into a MP4 container.
 If FFMpeg is not in your filepath then I typically put the FFMpeg.exe file in the 
-working directory.
+working directory.  An optional timestamp argument will place the sonar timestamp on 
+the frame.  Timestamp parameters include the fontsize and position (ts_pos).
 
 To implement:
 ```python
-	pyARIS.VideoExport(data, 'test_video.mp4', start_frame = 10, end_frame = 50)
+	pyARIS.VideoExport(data, 'test_video.mp4', start_frame = 10, end_frame = 50, timestamp = True, fontsize=30, ts_pos = (10,1200))
 ```
