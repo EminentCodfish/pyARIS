@@ -313,9 +313,14 @@ def DataImport(filename, startFrame = 1, frameBuffer = 0):
     Basic frame attributes can be found by calling the file.info() method.
     A list of all the frames attributes can be found by using dir(file), some
         of these may or may not be used by the ARIS.
-    """    
-    data = open(filename, 'rb')
-
+    """  
+    
+    try:
+        data = open(filename, 'rb')
+    except:
+        print('File Error: An error occurred trying to read the file.')
+        raise
+        
     #Start reading file header
     version_number      = struct.unpack('I', data.read(4))[0]
     FrameCount          = struct.unpack('I', data.read(4))[0]
@@ -400,7 +405,7 @@ def FrameRead(ARIS_data, frameIndex, frameBuffer = None):
     A list of all the frames attributes can be found by using dir(frame), some
         of these may or may not be used by the ARIS.
     """    
-
+    
     FrameSize = ARIS_data.NumRawBeams*ARIS_data.SamplesPerChannel
         
     frameoffset = (1024+(frameIndex*(1024+(FrameSize))))
@@ -593,7 +598,13 @@ def FrameRead(ARIS_data, frameIndex, frameBuffer = None):
         
     
     #Add the frame data
-    if pingmode == 9:
+    if pingmode in [1,2]:
+        ARIS_Frame.BeamCount = 48
+    if pingmode in [3,4,5]:
+        ARIS_Frame.BeamCount = 96
+    if pingmode in [6,7,8]:
+        ARIS_Frame.BeamCount = 64
+    if pingmode in [9,10,11,12]:
         ARIS_Frame.BeamCount = 128
     
     data.seek(frameoffset+1024, 0)
@@ -628,7 +639,7 @@ def FrameRead(ARIS_data, frameIndex, frameBuffer = None):
 def getXY(beamnum, binnum, frame):
     #WinStart = frame.samplestartdelay * 0.000001 * frame.soundspeed / 2
     bin_dist = frame.WinStart + frame.sampleperiod * binnum * 0.000001 * frame.soundspeed / 2
-    beam_angle = beamLookUp.beamAngle(beamnum)
+    beam_angle = beamLookUp.beamAngle(beamnum, frame.BeamCount)
     x = bin_dist*np.sin(np.deg2rad(-beam_angle))
     y = bin_dist*np.cos(np.deg2rad(-beam_angle))
     return x, y
@@ -638,7 +649,7 @@ def getBeamBin(x,y, frame):
     angle = np.rad2deg(np.tan(x/y))
     hyp = y/np.cos(np.deg2rad(angle))
     binnum2 = int((2*(hyp-frame.WinStart))/(frame.sampleperiod * 0.000001 * frame.soundspeed))
-    beamnum = beamLookUp.BeamLookUp(-angle)
+    beamnum = beamLookUp.BeamLookUp(-angle, frame.BeamCount)
     return beamnum, binnum2
     
 def px2Meters(x,y, frame, xdim = None):

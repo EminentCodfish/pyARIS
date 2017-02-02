@@ -5,6 +5,10 @@ This package provides an interface between python and ARIS files.
 ###Additional sources of information:
 Soundmetrics GitHub Repo.: https://github.com/SoundMetrics
 
+Currently this packages has only been tested on with the ARIS Explorer 3000
+in 128 beam mode.  It should work with other versions, but they have yet to 
+be tested.  This package currently doesn't support the tele-photo len.
+
 ### Requirements
 * Python (2.7.10)
 * Numpy (1.10.1) 
